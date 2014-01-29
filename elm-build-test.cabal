@@ -1,0 +1,11 @@
+name:           elm-build-test
+version:        0.1
+cabal-version:  >=1.2
+build-type:     Simple
+author:         jse313
+
+library
+  hs-source-dirs:  src
+  build-depends:   base >= 4
+  ghc-options:     -Wall
+

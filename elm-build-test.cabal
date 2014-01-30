@@ -5,7 +5,12 @@ build-type:     Simple
 author:         jse313
 
 library
+  exposed-modules: Language.Elm.Build
   hs-source-dirs:  src
   build-depends:   base >= 4
+                   , Elm
+                   , directory
+                   , process
+                   , temporary
   ghc-options:     -Wall
 

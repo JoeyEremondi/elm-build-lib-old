@@ -23,6 +23,43 @@ import Data.Text
 import qualified Data.Text.IO as TextIO
 
 
+{-|
+A Haskell library wrapper around the Elm executable, to build files from within Haskell.
+
+For more information on Elm, see http://elm-lang.org.
+
+** Usage **
+
+There are two main steps to using this library: converting Elm source to a Module structure,
+then compiling various modules.
+
+To compile a string to a module, simply do
+
+    let auxModule = moduleFromString (pack "Aux") (pack $ "module Aux where\n" ++ "x = 3")
+    
+or
+
+    let mainModule = moduleFromString (pack "Main") (pack $ "import Aux\n" ++ "main = plainText (show Aux.x)")
+
+Note that the first argument must match the name given in the `module X where`
+declaration in your elm file.
+Both arguments must be Text, not String.
+You can use `moduleFromFile` similarly.
+
+Once you have some modules, you can compile them into JavaScript or HTML:
+
+    Right js <- buildModulesWithOptions defaultOptions mainModule [auxModule]
+
+The first argument is always the module containing the `main` definition for Elm.
+The list is the list of all files which are dependencies of the main module.
+Files are written to a temp directory, then compiled using the `--make` option.
+
+A current limitation is that only single-directory structures are supported.
+
+-}
+
+
+
 type ModuleName = Text
 
 type ModuleSource = Text
@@ -69,23 +106,22 @@ buildModules = buildModulesWithOptions defaultOptions
 -- compile them using the `--make` option and the given options
 buildModulesWithOptions :: BuildOptions -> Module -> [Module]  -> IO (Either String Javascript)
 buildModulesWithOptions options mainModule@(Module (mainName, _)) otherModules = withTempDirectory "" ".elm_temp" (\dir -> do
-  mapM_ writeElmSource otherModules
-  writeElmSource mainModule
+  mapM_ (writeElmSource dir) otherModules
+  writeElmSource dir mainModule
 
   let binPath = fromMaybe "elm" $ elmBinPath options
   let runtimeOption = maybe Nothing (\path -> Just $ "--runtime=" ++ path) $ elmRuntimePath options
   let genJSOption = if (makeHtml options) then Nothing else (Just "--only-js")
   let resultExt = if (makeHtml options) then ".html" else ".js"
   
-  let cmdlineOptions = ["--make",  "--build-dir=" ++ dir, "--cache-dir=" ++ dir ++"/cache"] ++ catMaybes [runtimeOption, genJSOption] ++ [unpack mainName ++ ".elm"]
+  let cmdlineOptions = ["--make",  "--build-dir=" ++ dir ++ "/build", "--cache-dir=" ++ dir ++"/cache", "--src-dir=" ++ dir] ++ catMaybes [runtimeOption, genJSOption] ++ [ unpack mainName ++ ".elm"]
   
   (exitCode, stdout, stderr) <- readProcessWithExitCode binPath cmdlineOptions []
   
   case exitCode of
        ExitFailure i -> return $ Left $ "Elm failed with exit code " ++ (show i) ++ " and errors:" ++ stdout ++ stderr
        _ -> do
-          putStrLn $ stdout ++ stderr
-          let outputPath = dir ++ "/" ++ unpack mainName ++ resultExt
+          let outputPath = dir ++ "/build/" ++ unpack mainName ++ resultExt
           exists <- doesFileExist outputPath
           case exists of
                False -> return $ Left "Could not find output file from Elm"
@@ -95,4 +131,6 @@ buildModulesWithOptions options mainModule@(Module (mainName, _)) otherModules =
     
   )
   where
-    writeElmSource (Module (moduleName, source)) = TextIO.writeFile (unpack moduleName ++ ".elm") source
+    writeElmSource dir (Module (moduleName, source)) = do
+      let path = dir ++ "/" ++ unpack moduleName ++ ".elm"
+      TextIO.writeFile path source

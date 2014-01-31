@@ -5,7 +5,7 @@ A Haskell library wrapper around the Elm executable, to build files from within 
 
 For more information on Elm, see http://elm-lang.org.
 
-** Usage **
+== Usage ==
 
 There are two main steps to using this library: converting Elm source to a Module structure,
 then compiling various modules.

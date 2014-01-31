@@ -12,5 +12,6 @@ library
                    , directory
                    , process
                    , temporary
+                   , text
   ghc-options:     -Wall
 

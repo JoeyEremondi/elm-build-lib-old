@@ -60,15 +60,19 @@ import qualified Data.Text.IO as TextIO
 
 
 
-
+-- | Synonym for module names (i.e. Data.Text, Main, etc.)
 type ModuleName = Text
 
+-- | Type for module source code
 type ModuleSource = Text
 
+-- | Wrapper for modules, which have a name and source code
 newtype InternalModule = Module (ModuleName, ModuleSource)
 
+-- | Opaque type representing an Elm module loaded from a string or file
 type Module = InternalModule
 
+-- | Type representing Javascript output (as a string)
 type Javascript = Text
 
 -- | Abstraction for the options given to the elm executable
@@ -76,15 +80,17 @@ type Javascript = Text
 data BuildOptions = BuildOptions {
     elmBinPath :: Maybe String,
     elmRuntimePath :: Maybe String,
-    makeHtml :: Bool
+    makeHtml :: Bool,
+    dependenciesFile :: Maybe String
   }
 
--- Default options are: `elm` as binary, no runtime given, and generate JS only
+-- |Default options are: `elm` as binary, no runtime given, and generate JS only
 defaultOptions :: BuildOptions
 defaultOptions = BuildOptions {
  elmBinPath = Nothing,
  elmRuntimePath = Nothing,
- makeHtml = False
+ makeHtml = False,
+ dependenciesFile = Nothing
 }
 
 -- | Generate a module with the given Module name (e.g. 'MyLib.Foo')
@@ -107,6 +113,13 @@ buildModules = buildModulesWithOptions defaultOptions
 -- compile them using the `--make` option and the given options
 buildModulesWithOptions :: BuildOptions -> Module -> [Module]  -> IO (Either String Javascript)
 buildModulesWithOptions options mainModule@(Module (mainName, _)) otherModules = withTempDirectory "" ".elm_temp" (\dir -> do
+  --Write Elm dependencies file, if it exists
+  case (dependenciesFile options) of
+    Just depPath -> do
+      depString <- readFile depPath
+      writeFile (dir ++ "/elm_dependencies.json") depString
+    Nothing -> return ()
+  
   mapM_ (writeElmSource dir) otherModules
   writeElmSource dir mainModule
 

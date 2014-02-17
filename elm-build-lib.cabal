@@ -1,5 +1,5 @@
 Name: elm-build-lib
-Version: 0.1
+Version: 0.0.1
 Synopsis:       Elm compiler wrapper
 Description:     Wrappers around the Elm binary to compile elm source strings into Javascript within Haskell
 Homepage: http://github.com/JoeyEremondi/elm-build-lib
@@ -8,7 +8,7 @@ License: BSD3
 License-file: LICENSE
 
 name:           elm-build-lib
-version:        0.1
+version:        0.0.1
 cabal-version:  >=1.6
 build-type:     Simple
 author:         Joey Eremondi
@@ -28,7 +28,7 @@ library
   exposed-modules: Language.Elm.Build
   hs-source-dirs:  src
   build-depends:   base >=4.2 && <5
-                   , Elm
+                   --, Elm
                    , directory
                    , process
                    , temporary
